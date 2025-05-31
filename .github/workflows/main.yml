@@ -58,7 +58,6 @@ jobs:
   test-api:
     runs-on: ubuntu-latest
     needs: [build-backend, build-frontend]
-      
     steps:
 
       - name: Start infrastructure
@@ -83,11 +82,6 @@ jobs:
             --reporters cli,junit \
             --reporter-junit-export test-results.xml
         continue-on-error: true  # Позволяет продолжить workflow даже если тесты упали
-
-      - name: Upload test results
-        with:
-          name: api-test-results
-          path: test-results.xml
 
       - name: Stop infrastructure
         if: always()  # Гарантирует остановку контейнеров даже при ошибке тестов
