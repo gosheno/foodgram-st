@@ -40,8 +40,10 @@ class UserViewSet(viewsets.ModelViewSet):
         url_path='me/avatar',
     )
     def avatar(self, request):
-        return self.update_avatar(request) if request.method == "PUT" \
-            else self.delete_avatar(request)
+        if request.method == "PUT":
+            return self.update_avatar(request)
+        else:
+            self.delete_avatar(request)
 
     def update_avatar(self, request):
         user = request.user
@@ -69,8 +71,8 @@ class UserViewSet(viewsets.ModelViewSet):
         user = request.user
         recipes_limit = request.query_params.get('recipes_limit')
 
-        queryset = User.objects.filter(following__user=user) \
-            .annotate(recipes_count=Count('recipes'))
+        queryset = User.objects.filter(following__user=user).annotate(
+            recipes_count=Count('recipes'))
         page = self.paginate_queryset(queryset)
 
         context = self.get_serializer_context()
@@ -88,8 +90,8 @@ class UserViewSet(viewsets.ModelViewSet):
         user = request.user
         author = self.get_object()
 
-        if author == user or \
-                Follow.objects.filter(user=user, following=author).exists():
+        if author == user or Follow.objects.filter(
+                user=user, following=author).exists():
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         Follow.objects.create(user=user, following=author)

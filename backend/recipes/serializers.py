@@ -66,10 +66,9 @@ class RecipeSerializer(serializers.ModelSerializer):
         return UserSerializer(obj.author, context=self.context).data
 
     def get_ingredients(self, obj):
-        ingredients = \
-            RecipeIngredient.objects.filter(recipe=obj).select_related(
-                "ingredient"
-            )
+        ingredients = RecipeIngredient.objects.filter(
+            recipe=obj
+        ).select_related("ingredient")
         return IngredientInRecipeSerializer(ingredients, many=True).data
 
     def get_is_favorited(self, obj):

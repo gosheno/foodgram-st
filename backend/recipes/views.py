@@ -66,7 +66,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             serializer = RecipeMinifiedSerializer(recipe)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        elif request.method == 'DELETE':
+        if request.method == 'DELETE':
             favorite = Favorite.objects.filter(user=user, recipe=recipe)
             if not favorite.exists():
                 return Response(
@@ -93,7 +93,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             serializer = RecipeMinifiedSerializer(recipe)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        elif request.method == 'DELETE':
+        if request.method == 'DELETE':
             cart_item = ShoppingCart.objects.filter(user=user, recipe=recipe)
             if not cart_item.exists():
                 return Response(
