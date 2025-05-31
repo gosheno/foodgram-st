@@ -85,8 +85,10 @@ class FollowSerializer(serializers.ModelSerializer):
 
     def get_is_subscribed(self, obj):
         user = self.context['request'].user
-        return user.is_authenticated and \
-            obj.follower.filter(user=user).exists()
+        return (
+            user.is_authenticated
+            and obj.follower.filter(user=user).exists()
+        )
 
     def get_recipes(self, obj):
         limit = self.context.get('recipes_limit')

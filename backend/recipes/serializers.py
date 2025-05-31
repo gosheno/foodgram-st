@@ -199,7 +199,7 @@ class FollowSerializer(serializers.ModelSerializer):
 
         recipes = Recipe.objects.filter(author=obj)
         if limit is not None and limit.isdigit():
-            recipes = recipes[: int(limit)]
+            recipes = recipes[:int(limit)]
 
         return RecipeMinifiedSerializer(
             recipes,

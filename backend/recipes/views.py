@@ -120,7 +120,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
         recipe = self.get_object()
         short_id = format(recipe.id, 'x')
         short_path = reverse('api:short-link', kwargs={'short_id': short_id})
-        return Response({'short-link': request.build_absolute_uri(short_path)}, status=status.HTTP_200_OK)
+        return Response(
+            {'short-link': request.build_absolute_uri(short_path)},
+            status=status.HTTP_200_OK
+        )
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
