@@ -34,10 +34,10 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     @action(
-    detail=False,
-    methods=['put', 'delete'],
-    permission_classes=[IsAuthenticated],
-    url_path='me/avatar',
+        detail=False,
+        methods=['put', 'delete'],
+        permission_classes=[IsAuthenticated],
+        url_path='me/avatar',
     )
     def avatar(self, request):
         if request.method == "PUT":
