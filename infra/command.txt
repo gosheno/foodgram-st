@@ -1,1 +1,1 @@
-docker-compose exec backend ch
+docker-compose exec backend ./init.sh
