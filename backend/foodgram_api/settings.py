@@ -19,7 +19,7 @@ ALLOWED_HOSTS = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost",
     "http://127.0.0.1",
-    
+
 ]
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -77,7 +77,8 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.getenv('POSTGRES_DB', 'django'),
         'USER': os.getenv('POSTGRES_USER', 'django'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'mysecretpassword'),  # Changed to a more secure defaul
+        # Changed to a more secure defaul
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'mysecretpassword'),
         'HOST': os.getenv('DB_HOST', 'db'),  # Changed 'db' to 'localhost'
         'PORT': os.getenv('DB_PORT', 5432)
     }

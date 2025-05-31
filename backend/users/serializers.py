@@ -4,6 +4,7 @@ from foodgram_api.image_field import Base64ImageField
 from recipes.serializers import RecipeMinifiedSerializer
 from recipes.models import Recipe
 
+
 class UserSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField()
     avatar = serializers.ImageField(read_only=True)

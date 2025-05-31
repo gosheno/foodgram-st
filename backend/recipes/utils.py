@@ -19,6 +19,6 @@ def generate_shopping_list(user):
             f"{item['total_amount']} "
             f"{item['ingredient__measurement_unit']}\n"
         )
-    
+
     shopping_list += "\nFoodgram - Ваш кулинарный помощник!"
     return shopping_list

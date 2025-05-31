@@ -46,7 +46,8 @@ class RecipeMinifiedSerializer(serializers.ModelSerializer):
 
 class RecipeSerializer(serializers.ModelSerializer):
     author = serializers.SerializerMethodField()
-    ingredients = IngredientInRecipeSerializer(many=True, source="recipe_ingredients")
+    ingredients = IngredientInRecipeSerializer(
+        many=True, source="recipe_ingredients")
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
 
@@ -70,9 +71,10 @@ class RecipeSerializer(serializers.ModelSerializer):
         return UserSerializer(obj.author, context=self.context).data
 
     def get_ingredients(self, obj):
-        ingredients = RecipeIngredient.objects.filter(recipe=obj).select_related(
-            "ingredient"
-        )
+        ingredients = \
+            RecipeIngredient.objects.filter(recipe=obj).select_related(
+                "ingredient"
+            )
         return IngredientInRecipeSerializer(ingredients, many=True).data
 
     def get_is_favorited(self, obj):
@@ -132,7 +134,8 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         if self.context["request"].method in ["PATCH", "PUT"]:
             if "ingredients" not in data:
                 raise serializers.ValidationError(
-                    {"ingredients": "This field is required when updating a recipe."},
+                    {"ingredients": "This field is required \
+                        when updating a recipe."},
                     code="required",
                 )
         return data
@@ -196,7 +199,8 @@ class FollowSerializer(serializers.ModelSerializer):
 
     def get_is_subscribed(self, obj):
         user = self.context["request"].user
-        return user.is_authenticated and obj.follower.filter(user=user).exists()
+        return user.is_authenticated and \
+            obj.follower.filter(user=user).exists()
 
     def get_recipes(self, obj):
         limit = self.context.get("recipes_limit")

@@ -11,7 +11,7 @@ class Command(BaseCommand):
         file_path = os.path.abspath(os.path.join(
             os.path.dirname(__file__), '../../../data/ingredients.json'
         ))
-        
+
         with open(file_path, 'r', encoding='utf-8') as f:
             ingredients = json.load(f)
             ingredient_objects = [

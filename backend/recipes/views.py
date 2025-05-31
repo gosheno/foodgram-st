@@ -1,4 +1,3 @@
-from django.db.models import Count
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -6,7 +5,10 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.permissions import (
+    IsAuthenticated,
+    IsAuthenticatedOrReadOnly,
+)
 from recipes.models import (
     Ingredient,
     Recipe,
@@ -117,7 +119,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def download_shopping_cart(self, request):
         user = request.user
         shopping_list = generate_shopping_list(user)
-        
+
         response = HttpResponse(shopping_list, content_type='text/plain')
         filename = f'shopping_cart_{user.username}.txt'
         response['Content-Disposition'] = f'attachment; filename={filename}'

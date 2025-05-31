@@ -5,7 +5,7 @@ from django.core.validators import MinValueValidator
 User = get_user_model()
 
 
-class Ingredient(models.Model):       
+class Ingredient(models.Model):
     name = models.CharField(
         max_length=200,
         verbose_name="Название ингредиента"
@@ -14,10 +14,10 @@ class Ingredient(models.Model):
         max_length=200,
         verbose_name="Единица измерения"
     )
-    
+
     def __str__(self):
         return f"{self.name} ({self.measurement_unit})"
-    
+
     class Meta:
         ordering = ['name']
         verbose_name = "Ингредиент"
@@ -58,10 +58,10 @@ class Recipe(models.Model):
         blank=True,
         verbose_name="Изображение рецепта"
     )
-        
+
     def __str__(self):
         return self.name
-    
+
     class Meta:
         ordering = ['-pub_date']
         verbose_name = "Рецепт"
@@ -97,7 +97,8 @@ class RecipeIngredient(models.Model):
         verbose_name_plural = "Ингредиенты в рецептах"
 
     def __str__(self):
-        return f"{self.ingredient.name} - {self.amount} {self.ingredient.measurement_unit}"
+        return f"{self.ingredient.name} - {self.amount} \
+            {self.ingredient.measurement_unit}"
 
 
 class Favorite(models.Model):
@@ -141,7 +142,7 @@ class ShoppingCart(models.Model):
         related_name="in_shopping_carts",
         verbose_name="Рецепт"
     )
-    
+
     class Meta:
         constraints = [
             models.UniqueConstraint(
