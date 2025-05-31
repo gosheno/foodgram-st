@@ -34,15 +34,15 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     @action(
-        detail=False,
-        methods=['put', 'delete'],
-        permission_classes=[IsAuthenticated],
-        url_path='me/avatar',
+    detail=False,
+    methods=['put', 'delete'],
+    permission_classes=[IsAuthenticated],
+    url_path='me/avatar',
     )
     def avatar(self, request):
         if request.method == "PUT":
             return self.update_avatar(request)
-        self.delete_avatar(request)
+        return self.delete_avatar(request)  # Added return here
 
     def update_avatar(self, request):
         user = request.user
@@ -89,9 +89,17 @@ class UserViewSet(viewsets.ModelViewSet):
         user = request.user
         author = self.get_object()
 
-        if author == user or Follow.objects.filter(
-                user=user, following=author).exists():
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+        if author == user:
+            return Response(
+                {"detail": "You cannot subscribe to yourself."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if Follow.objects.filter(user=user, following=author).exists():
+            return Response(
+                {"detail": "You are already subscribed to this user."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         Follow.objects.create(user=user, following=author)
 
