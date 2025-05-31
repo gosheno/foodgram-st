@@ -22,23 +22,21 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
 
-    - name: Build and push backend image
+    - name: Build and push all images
       uses: docker/build-push-action@v5
       with:
-        context: ./backend
+        contexts: |
+          ./backend
+          ./frontend
+          ./infra
         push: true
-        tags: ${{ secrets.DOCKER_USERNAME }}/foodgram-backend:latest
+        tags: |
+          ${{ secrets.DOCKER_USERNAME }}/foodgram-backend:latest
+          ${{ secrets.DOCKER_USERNAME }}/foodgram-frontend:latest
+          ${{ secrets.DOCKER_USERNAME }}/foodgram-nginx:latest
 
-    - name: Build and push frontend image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./frontend
-        push: true
-        tags: ${{ secrets.DOCKER_USERNAME }}/foodgram-frontend:latest
-
-    - name: Build and push nginx image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./infra
-        push: true
-        tags: ${{ secrets.DOCKER_USERNAME }}/foodgram-nginx:latest
+    - name: Send Telegram notification
+      run: |
+        curl -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+          -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+          -d text="Сборка контейнеров завершена успешно!"
