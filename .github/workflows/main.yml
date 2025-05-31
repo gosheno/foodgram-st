@@ -60,8 +60,6 @@ jobs:
     needs: [build-backend, build-frontend]
       
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
 
       - name: Start infrastructure
         run: |
