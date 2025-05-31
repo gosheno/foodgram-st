@@ -1,8 +1,9 @@
-from rest_framework import serializers
-from .models import User, Follow
 from foodgram_api.image_field import Base64ImageField
-from recipes.serializers import RecipeMinifiedSerializer
 from recipes.models import Recipe
+from recipes.serializers import RecipeMinifiedSerializer
+from rest_framework import serializers
+
+from .models import Follow, User
 
 
 class UserSerializer(serializers.ModelSerializer):

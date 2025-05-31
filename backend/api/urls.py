@@ -1,7 +1,8 @@
-from django.urls import include, path, re_path
+from django.urls import include, path
+from recipes.views import IngredientViewSet, RecipeViewSet, short_link_redirect
 from rest_framework.routers import DefaultRouter
 from users.views import UserViewSet
-from recipes.views import RecipeViewSet, IngredientViewSet, short_link_redirect
+
 router = DefaultRouter()
 
 router = DefaultRouter()

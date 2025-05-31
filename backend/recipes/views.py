@@ -1,29 +1,19 @@
-from django.http import HttpResponse, HttpResponseRedirect, Http404
+from api.paginations import CustomPagination
+from api.permissions import IsAuthorOrReadOnly
+from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import viewsets, status
+from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import (IsAuthenticated,
+                                        IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
-from rest_framework.permissions import (
-    IsAuthenticated,
-    IsAuthenticatedOrReadOnly,
-)
-from recipes.models import (
-    Ingredient,
-    Recipe,
-    Favorite,
-    ShoppingCart,
-)
-from .serializers import (
-    RecipeSerializer,
-    RecipeCreateUpdateSerializer,
-    RecipeMinifiedSerializer,
-    IngredientSerializer
-)
-from api.paginations import CustomPagination
-from api.permissions import IsAuthorOrReadOnly
-from .filters import RecipeFilter, IngredientFilter
+
+from .filters import IngredientFilter, RecipeFilter
+from .serializers import (IngredientSerializer, RecipeCreateUpdateSerializer,
+                          RecipeMinifiedSerializer, RecipeSerializer)
 from .utils import generate_shopping_list
 
 

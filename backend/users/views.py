@@ -1,17 +1,13 @@
-from django.db.models import Count
-from rest_framework import viewsets, status
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from users.serializers import (
-    UserSerializer,
-    UserCreateSerializer,
-    AvatarUploadSerializer,
-    SetPasswordSerializer,
-    FollowSerializer,
-)
-from users.models import Follow, User
 from api.paginations import CustomPagination
+from django.db.models import Count
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from users.models import Follow, User
+from users.serializers import (AvatarUploadSerializer, FollowSerializer,
+                               SetPasswordSerializer, UserCreateSerializer,
+                               UserSerializer)
 
 
 class UserViewSet(viewsets.ModelViewSet):
