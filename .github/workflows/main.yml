@@ -57,7 +57,6 @@ jobs:
     needs:
       - build-backend
       - build-frontend
-      - build-nginx
 
     steps:
     - name: Send Telegram notification
