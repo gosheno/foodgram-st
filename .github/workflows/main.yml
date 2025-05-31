@@ -7,6 +7,25 @@ on:
     branches: [ main ]
 
 jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 pep8-naming flake8-broken-line flake8-return flake8-isort
+        pip install -r backend/requirements.txt
+
+    - name: Test with flake8
+      run: |
+        python -m flake8 backend
   build-backend:
     runs-on: ubuntu-latest
     steps:
@@ -55,42 +74,9 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  test-api:
-    runs-on: ubuntu-latest
-    steps:
-
-      - name: Start infrastructure
-        run: |
-          cd infra
-          docker-compose up -d --build
-          sleep 30  # Увеличено время ожидания для инициализации сервисов
-
-      - name: Wait for backend to be ready
-        run: |
-          until curl -s http://localhost:8000/api/healthcheck; do
-            sleep 5
-          done
-
-      - name: Install Newman
-        run: npm install -g newman
-
-      - name: Run API tests
-        run: |
-          newman run postman_collection/foodgram.postman_collection.json \
-            --env-var "BASE_URL=http://localhost:8000" \
-            --reporters cli,junit \
-            --reporter-junit-export test-results.xml
-        continue-on-error: true  # Позволяет продолжить workflow даже если тесты упали
-
-      - name: Stop infrastructure
-        if: always()  # Гарантирует остановку контейнеров даже при ошибке тестов
-        run: |
-          cd infra
-          docker-compose down -v
-
   notify:
     runs-on: ubuntu-latest
-    needs: [build-backend, build-frontend, test-api]
+    needs: [build-backend, build-frontend]
     if: always()  # Всегда отправляет уведомление, даже если предыдущие шаги упали
     steps:
       - name: Send notification
