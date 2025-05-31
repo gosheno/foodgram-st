@@ -85,7 +85,6 @@ jobs:
         continue-on-error: true  # Позволяет продолжить workflow даже если тесты упали
 
       - name: Upload test results
-        uses: actions/upload-artifact@v3
         with:
           name: api-test-results
           path: test-results.xml
