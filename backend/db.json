@@ -1,21 +1,5 @@
 [
 {
-  "model": "authtoken.token",
-  "pk": "5b88c422dbba8ab1a325faaf0ac3e121e413013f",
-  "fields": {
-    "user": 2,
-    "created": "2025-05-29T16:59:41.573Z"
-  }
-},
-{
-  "model": "authtoken.token",
-  "pk": "eff0c30733d9cac85af3f21cb26d74b8e37c4d95",
-  "fields": {
-    "user": 1,
-    "created": "2025-05-29T16:59:43.809Z"
-  }
-},
-{
   "model": "users.user",
   "pk": 1,
   "fields": {
