@@ -42,8 +42,7 @@ class UserViewSet(viewsets.ModelViewSet):
     def avatar(self, request):
         if request.method == "PUT":
             return self.update_avatar(request)
-        else:
-            self.delete_avatar(request)
+        self.delete_avatar(request)
 
     def update_avatar(self, request):
         user = request.user
