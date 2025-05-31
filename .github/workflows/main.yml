@@ -64,3 +64,53 @@ jobs:
         curl -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
           -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
           -d text="Сборка контейнеров завершена успешно!"
+  build-and-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: foodgram
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Compose
+        run: |
+          cd infra
+          docker-compose up --build
+          sleep 15  # Ожидаем инициализацию сервисов
+
+      - name: Install Newman
+        run: npm install -g newman
+
+      - name: Run Postman tests
+        run: |
+          newman run ./postman_collection/foodgram.postman_collection.json \
+            --env-var "BASE_URL=http://localhost.api" \
+            --reporters cli,junit \
+            --reporter-junit-export test-results.xml
+          
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: postman-test-results
+          path: test-results.xml
+
+      - name: Notify Telegram
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d text="✅ Тесты успешно пройдены!%0A%0A📦 Проект: Foodgram%0A🔧 Ветка: ${GITHUB_REF#refs/heads/}%0A🔗 Коммит: ${GITHUB_SHA:0:7}"
+  
