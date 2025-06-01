@@ -43,8 +43,7 @@ docker-compose up --build
 в отдельной консоли:
 
 ```
-docker-compose exec backend ch
-./init.sh
+docker-compose exec backend ch ./init.sh
 ```
 при этом выполнится скрипт внутри бэкенд контейнера 
 ```
