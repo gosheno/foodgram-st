@@ -1,5 +1,3 @@
-Вот обновленный README.md с добавлением информации о Redis и процессе деплоя:
-
 # 🍳 Foodgram - Ваш кулинарный цифровой помощник  
 ![example workflow](https://github.com/NIK-TIGER-BILL/foodgram-project-react/actions/workflows/foodgram_workflow.yml/badge.svg)  
 
@@ -105,6 +103,12 @@ docker-compose exec backend ./init.sh
   - Статические файлы
   - Медиа-файлы
 
-## 📬 Контакты
+
 **Автор backend-части**: Гоша  
 **Год разработки**: 2025  
+
+📂 **Исходный код**: [GitHub Repository](https://github.com/gosheno/foodgram-st)  
+📨 **Telegram**: [@goshenou](https://t.me/goshenou)
+
+[![Telegram](https://img.shields.io/badge/-Telegram-26A5E4?style=flat&logo=telegram&logoColor=white)](https://t.me/goshenou)
+[![GitHub](https://img.shields.io/badge/-GitHub-181717?style=flat&logo=github)](https://github.com/gosheno)
