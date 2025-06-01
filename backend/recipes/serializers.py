@@ -42,7 +42,7 @@ class RecipeMinifiedSerializer(serializers.ModelSerializer):
 class RecipeSerializer(serializers.ModelSerializer):
     author = serializers.SerializerMethodField()
     ingredients = IngredientInRecipeSerializer(
-        many=True, 
+        many=True,
         source="recipe_ingredients",
         read_only=True  # Добавляем явное указание, что поле только для чтения
     )
@@ -106,7 +106,7 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         )
         self._add_ingredients(recipe, ingredients_data)
         return recipe
-    
+
     def update(self, instance, validated_data):
         ingredients_data = validated_data.pop("ingredients", None)
         instance = super().update(instance, validated_data)
@@ -124,28 +124,31 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
             )
             for item in ingredients_data
         ])
-        
+
     def validate_ingredients(self, value):
         if not value:
-            raise serializers.ValidationError("Необходимо указать хотя бы один ингредиент.")
+            raise serializers.ValidationError(
+                "Необходимо указать хотя бы один ингредиент.")
 
         ids = [item["id"].id for item in value]
         if len(ids) != len(set(ids)):
-            raise serializers.ValidationError("Ингредиенты в рецепте не должны повторяться.")
+            raise serializers.ValidationError(
+                "Ингредиенты в рецепте не должны повторяться.")
         return value
 
     def validate(self, data):
         request = self.context.get("request")
         if not self.context.get("request").user.is_authenticated:
-            raise serializers.ValidationError("Для создания или изменения рецепта требуется авторизация.")
-        
+            raise serializers.ValidationError(
+                "Для создания или изменения рецепта требуется авторизация.")
+
         if request.method in ['PUT', 'PATCH'] and 'ingredients' not in data:
             raise serializers.ValidationError({
                 "ingredients": ["Это поле обязательно при обновлении рецепта."]
             }, code='required')
-            
+
         return data
-    
+
     def to_representation(self, instance):
         return RecipeSerializer(instance, context=self.context).data
 
@@ -155,7 +158,7 @@ class ShoppingCartSerializer(serializers.ModelSerializer):
     class Meta:
         model = ShoppingCart
         fields = "__all__"
-        
+
 
 class FollowSerializer(serializers.ModelSerializer):
     recipes = serializers.SerializerMethodField()
@@ -172,14 +175,19 @@ class FollowSerializer(serializers.ModelSerializer):
 
     def get_is_subscribed(self, obj):
         user = self.context.get("request").user
-        return user.is_authenticated and obj.follower.filter(user=user).exists()
+        if user.is_authenticated:
+            if obj.follower.filter(user=user).exists():
+                return True
+        return False
 
     def get_recipes(self, obj):
         limit = self.context.get("recipes_limit")
         queryset = obj.recipes.all()
         if limit and limit.isdigit():
             queryset = queryset[:int(limit)]
-        return RecipeMinifiedSerializer(queryset, many=True, context=self.context).data
+        return RecipeMinifiedSerializer(queryset,
+                                        many=True,
+                                        context=self.context).data
 
     def get_recipes_count(self, obj):
         return obj.recipes.count()

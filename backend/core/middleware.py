@@ -1,7 +1,9 @@
 # core/middleware.py
-from django.utils.deprecation import MiddlewareMixin
 from django.http import JsonResponse
-from rest_framework_simplejwt.exceptions import InvalidToken, AuthenticationFailed
+from django.utils.deprecation import MiddlewareMixin
+from rest_framework_simplejwt.exceptions import (
+    AuthenticationFailed,
+    InvalidToken)
 
 
 class DisableCSRFForAPI(MiddlewareMixin):
@@ -20,7 +22,8 @@ class ClearInvalidTokenMiddleware:
 
     def process_exception(self, request, exception):
         if isinstance(exception, (InvalidToken, AuthenticationFailed)):
-            response = JsonResponse({"detail": "Token is invalid or expired"}, status=401)
+            response = JsonResponse({"detail": "Token is invalid or expired"},
+                                    status=401)
             response.delete_cookie('access_token')  # Удаляем куку с токеном
             return response
         return None

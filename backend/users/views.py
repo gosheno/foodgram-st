@@ -1,17 +1,14 @@
 from api.paginations import CustomPagination
+from django.core.cache import cache
 from django.db.models import Count
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from django.core.cache import cache
-
 from users.models import Follow, User
-from users.serializers import (
-    AvatarUploadSerializer, FollowSerializer,
-    SetPasswordSerializer, UserCreateSerializer,
-    UserSerializer,
-)
+from users.serializers import (AvatarUploadSerializer, FollowSerializer,
+                               SetPasswordSerializer, UserCreateSerializer,
+                               UserSerializer)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -73,7 +70,8 @@ class UserViewSet(viewsets.ModelViewSet):
             recipes_count=Count('recipes')
         ).prefetch_related('recipes')
         page = self.paginate_queryset(queryset)
-        context = {'request': request, 'recipes_limit': request.query_params.get('recipes_limit')}
+        context = {'request': request,
+                   'recipes_limit': request.query_params.get('recipes_limit')}
         serializer = FollowSerializer(page, many=True, context=context)
         return self.get_paginated_response(serializer.data)
 
@@ -96,13 +94,19 @@ class UserViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         Follow.objects.create(user=request.user, following=author)
-        serializer = FollowSerializer(author, context=self._get_follow_context(request))
+        serializer = FollowSerializer(
+            author,
+            context=self._get_follow_context(request)
+        )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @subscribe.mapping.delete
     def unsubscribe(self, request, pk=None):
         """Отписаться от пользователя."""
-        follow = Follow.objects.filter(user=request.user, following=self.get_object())
+        follow = Follow.objects.filter(
+            user=request.user,
+            following=self.get_object()
+        )
         if not follow.exists():
             return Response(status=status.HTTP_400_BAD_REQUEST)
         follow.delete()
@@ -116,7 +120,10 @@ class UserViewSet(viewsets.ModelViewSet):
     )
     def set_password(self, request):
         """Изменить пароль пользователя."""
-        serializer = SetPasswordSerializer(data=request.data, context={'request': request})
+        serializer = SetPasswordSerializer(
+            data=request.data,
+            context={'request': request}
+        )
         serializer.is_valid(raise_exception=True)
         request.user.set_password(serializer.validated_data['new_password'])
         request.user.save()
@@ -128,14 +135,14 @@ class UserViewSet(viewsets.ModelViewSet):
             'request': request,
             'recipes_limit': request.query_params.get('recipes_limit')
         }
-        
+
     def retrieve(self, request, *args, **kwargs):
         cache_key = f"user_{kwargs['pk']}_details"
         data = cache.get(cache_key)
-        
+
         if not data:
             instance = self.get_object()
             serializer = self.get_serializer(instance)
             data = serializer.data
-            cache.set(cache_key, data, timeout=60*15)  # 15 минут
+            cache.set(cache_key, data, timeout=60 * 15)  # 15 минут
         return Response(data)

@@ -1,5 +1,6 @@
 from api.paginations import CustomPagination
 from api.permissions import IsAuthorOrReadOnly
+from django.core.cache import cache
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -7,19 +8,16 @@ from django_filters.rest_framework import DjangoFilterBackend
 from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import (
-    IsAuthenticated,
-    IsAuthenticatedOrReadOnly
-)
+from rest_framework.permissions import (IsAuthenticated)
 from rest_framework.response import Response
-from django.core.cache import cache
 
 from .filters import IngredientFilter, RecipeFilter
 from .serializers import (
     IngredientSerializer,
-    RecipeCreateUpdateSerializer,                 
+    RecipeCreateUpdateSerializer,
     RecipeMinifiedSerializer,
-    RecipeSerializer)
+    RecipeSerializer
+)
 from .utils import generate_shopping_list
 
 
@@ -33,7 +31,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         'favorited_by',
         'in_shopping_carts'
     ).select_related('author')
-    
+
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:
             return RecipeCreateUpdateSerializer
@@ -51,11 +49,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 'shopping_cart_ids': set()
             })
             return context
-        
+
         # Один запрос для обоих типов данных
-        favorites = set(Favorite.objects.filter(user=user).values_list('recipe_id', flat=True))
-        carts = set(ShoppingCart.objects.filter(user=user).values_list('recipe_id', flat=True))
-        
+        favorites = set(Favorite.objects.filter(
+            user=user).values_list('recipe_id', flat=True))
+        carts = set(ShoppingCart.objects.filter(
+            user=user).values_list('recipe_id', flat=True))
+
         context.update({
             'favorited_ids': favorites,
             'shopping_cart_ids': carts
@@ -68,7 +68,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def favorite(self, request, pk=None):
         recipe = get_object_or_404(Recipe, pk=pk)
         user = request.user
-        favorite_exists = Favorite.objects.filter(user=user, recipe=recipe).exists()
+        favorite_exists = Favorite.objects.filter(
+            user=user, recipe=recipe).exists()
 
         if request.method == 'POST':
             if favorite_exists:
@@ -95,7 +96,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def shopping_cart(self, request, pk=None):
         recipe = get_object_or_404(Recipe, pk=pk)
         user = request.user
-        in_cart = ShoppingCart.objects.filter(user=user, recipe=recipe).exists()
+        in_cart = ShoppingCart.objects.filter(
+            user=user, recipe=recipe).exists()
 
         if request.method == 'POST':
             if in_cart:
@@ -122,7 +124,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def download_shopping_cart(self, request):
         user = request.user
         shopping_list = generate_shopping_list(user)
-        
+
         if not shopping_list.strip():
             return Response(
                 {'detail': 'Ваш список покупок пуст.'},
@@ -151,16 +153,16 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = None
     filter_backends = [DjangoFilterBackend]
     filterset_class = IngredientFilter
-    
+
     def list(self, request, *args, **kwargs):
         cache_key = f"ingredients_{request.query_params.get('name', '')}"
         data = cache.get(cache_key)
-        
+
         if not data:
             queryset = self.filter_queryset(self.get_queryset())
             serializer = self.get_serializer(queryset, many=True)
             data = serializer.data
-            cache.set(cache_key, data, timeout=60*60)  # Кэшируем на 1 час
+            cache.set(cache_key, data, timeout=60 * 60)  # Кэшируем на 1 час
         return Response(data)
 
 

@@ -43,7 +43,6 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "core.middleware.ClearInvalidTokenMiddleware",
     "core.middleware.DisableCSRFForAPI",
-    
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -196,7 +195,7 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 CORS_ALLOWED_ORIGINS = [
-    "http://127.0.0.1:3000", 
+    "http://127.0.0.1:3000",
     "http://localhost:3000",
     "http://localhost",
     "http://127.0.0.1",

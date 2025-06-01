@@ -32,7 +32,7 @@ class IngredientFilter(rest_framework.FilterSet):
         field_name='name',
         lookup_expr='istartswith',
     )
-    
+
     class Meta:
         model = Ingredient
         fields = ['name']

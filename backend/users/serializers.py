@@ -1,8 +1,9 @@
 from foodgram_api.image_field import Base64ImageField
-from recipes.models import Recipe
 from recipes.serializers import RecipeMinifiedSerializer
 from rest_framework import serializers
+
 from .models import Follow, User
+
 
 class UserSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField()
@@ -19,8 +20,10 @@ class UserSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         return (
             request and request.user.is_authenticated
-            and Follow.objects.filter(user=request.user, following=obj).exists()
+            and Follow.objects.filter(user=request.user,
+                                      following=obj).exists()
         )
+
 
 class UserCreateSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
@@ -40,6 +43,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(**validated_data)
         return user
 
+
 class AvatarUploadSerializer(serializers.ModelSerializer):
     avatar = Base64ImageField()
 
@@ -47,15 +51,18 @@ class AvatarUploadSerializer(serializers.ModelSerializer):
         model = User
         fields = ('avatar',)
 
+
 class SetPasswordSerializer(serializers.Serializer):
     current_password = serializers.CharField(write_only=True, required=True)
-    new_password = serializers.CharField(write_only=True, required=True, min_length=8)
+    new_password = serializers.CharField(
+        write_only=True, required=True, min_length=8)
 
     def validate_current_password(self, value):
         user = self.context['request'].user
         if not user.check_password(value):
             raise serializers.ValidationError("Неверный текущий пароль.")
         return value
+
 
 class FollowSerializer(serializers.ModelSerializer):
     recipes = serializers.SerializerMethodField()
