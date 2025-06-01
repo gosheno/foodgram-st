@@ -1,0 +1,60 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+  SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+  SERVER_IP: ${{ secrets.SERVER_IP }}
+  SERVER_USER: ${{ secrets.SERVER_USER }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
+      
+      - name: Build and push backend
+        run: |
+          docker build -t $DOCKERHUB_USERNAME/foodgram-backend:latest ../backend
+          docker push $DOCKERHUB_USERNAME/foodgram-backend:latest
+      
+      - name: Build and push frontend
+        run: |
+          docker build -t $DOCKERHUB_USERNAME/foodgram-frontend:latest ../frontend
+          docker push $DOCKERHUB_USERNAME/foodgram-frontend:latest
+      
+      - name: Save docker-compose
+        run: |
+          sed -i "s|image: postgres:16.2-alpine|image: $DOCKERHUB_USERNAME/foodgram-postgres:latest|g" docker-compose.prod.yml
+          sed -i "s|build: ../backend|image: $DOCKERHUB_USERNAME/foodgram-backend:latest|g" docker-compose.prod.yml
+          sed -i "s|build: ../frontend|image: $DOCKERHUB_USERNAME/foodgram-frontend:latest|g" docker-compose.prod.yml
+          echo "PROD_COMPOSE=$(cat docker-compose.prod.yml | base64 -w 0)" >> $GITHUB_ENV
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install SSH key
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ env.SSH_PRIVATE_KEY }}
+      
+      - name: Deploy to server
+        run: |
+          ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP "
+            echo '${{ env.PROD_COMPOSE }}' | base64 --decode > docker-compose.yml
+            docker-compose pull
+            docker-compose down
+            docker-compose up -d
+            docker system prune -af
+          "

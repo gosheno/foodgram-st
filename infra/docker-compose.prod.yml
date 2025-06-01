@@ -1,0 +1,59 @@
+version: '3.8'
+
+volumes:
+  pg_data:
+  redis_data:
+  static:
+  media:
+
+services:
+  db:
+    image: postgres:16.2-alpine
+    container_name: foodgram-db
+    env_file: .env
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    image: goshenou/foodgram-backend:latest
+    container_name: foodgram-backend
+    env_file: .env
+    volumes:
+      - media:/app/mediafiles
+      - static:/app/staticfiles
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  frontend:
+    image: goshenou/foodgram-frontend:latest
+    container_name: foodgram-frontend
+    volumes:
+      - static:/app/static
+
+  nginx:
+    image: nginx:1.25.4-alpine
+    container_name: foodgram-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - static:/usr/share/nginx/html/static
+      - media:/mediafiles
+    depends_on:
+      - backend
+      - frontend
+
+  redis:
+    image: redis:alpine
+    container_name: foodgram-redis
+    volumes:
+      - redis_data:/data

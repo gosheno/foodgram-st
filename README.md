@@ -1,73 +1,110 @@
-# Проект Foodgram
+Вот обновленный README.md с добавлением информации о Redis и процессе деплоя:
+
+# 🍳 Foodgram - Ваш кулинарный цифровой помощник  
 ![example workflow](https://github.com/NIK-TIGER-BILL/foodgram-project-react/actions/workflows/foodgram_workflow.yml/badge.svg)  
-  
-[![Python](https://img.shields.io/badge/-Python-464646?style=flat-square&logo=Python)](https://www.python.org/)
-[![Django](https://img.shields.io/badge/-Django-464646?style=flat-square&logo=Django)](https://www.djangoproject.com/)
-[![Django REST Framework](https://img.shields.io/badge/-Django%20REST%20Framework-464646?style=flat-square&logo=Django%20REST%20Framework)](https://www.django-rest-framework.org/)
-[![PostgreSQL](https://img.shields.io/badge/-PostgreSQL-464646?style=flat-square&logo=PostgreSQL)](https://www.postgresql.org/)
-[![Nginx](https://img.shields.io/badge/-NGINX-464646?style=flat-square&logo=NGINX)](https://nginx.org/ru/)
-[![gunicorn](https://img.shields.io/badge/-gunicorn-464646?style=flat-square&logo=gunicorn)](https://gunicorn.org/)
-[![docker](https://img.shields.io/badge/-Docker-464646?style=flat-square&logo=docker)](https://www.docker.com/)
-[![GitHub%20Actions](https://img.shields.io/badge/-GitHub%20Actions-464646?style=flat-square&logo=GitHub%20actions)](https://github.com/features/actions)
 
+[![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Django 4.2](https://img.shields.io/badge/Django-4.2-092E20?logo=django&logoColor=white)](https://www.djangoproject.com/)
+[![DRF](https://img.shields.io/badge/DRF-3.14-9F1D20?logo=django&logoColor=white)](https://www.django-rest-framework.org/)
+[![PostgreSQL 16](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Redis](https://img.shields.io/badge/Redis-7.0-DC382D?logo=redis&logoColor=white)](https://redis.io/)
+[![Docker](https://img.shields.io/badge/Docker-24.0-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+[![CI/CD](https://img.shields.io/badge/GitHub_Actions-✔-2088FF?logo=github-actions&logoColor=white)](https://github.com/features/actions)
 
-Foodgram - продуктовый помощник с базой кулинарных рецептов. Позволяет публиковать рецепты, сохранять избранные, а также формировать список покупок для выбранных рецептов. Можно подписываться на любимых авторов.
+## 🌟 О проекте
 
+**Foodgram** — это интуитивно понятный сервис для всех любителей кулинарии, который позволяет:
 
-### Запуск проекта:
+- 📖 Создавать и публиковать рецепты с пошаговыми инструкциями  
+- ❤️ Сохранять любимые рецепты в избранное  
+- 🛒 Формировать умный список покупок для выбранных блюд  
+- 👨‍🍳 Подписываться на любимых авторов  
+- 🏷️ Искать рецепты по тегам и ингредиентам  
 
-- Клонировать репозиторий:
-```link
-https://github.com/gosheno/foodgram-st.git
+## 🚀 Технологический стек
+
+| Компонент       | Технологии                          |
+|-----------------|-------------------------------------|
+| **Backend**     | Django + Django REST Framework      |
+| **Frontend**    | React                               |
+| **База данных** | PostgreSQL                          |
+| **Кэширование** | Redis                               |
+| **Сервер**      | Nginx + Gunicorn                    |
+| **Инфраструктура** | Docker + Docker Compose         |
+| **CI/CD**       | GitHub Actions                      |
+
+## 🛠️ Быстрый старт
+
+### 1. Клонирование репозитория
+```bash
+git clone https://github.com/gosheno/foodgram-st.git
+cd foodgram-st/infra
 ```
 
-- В директории infra создать файл .env и заполнить своими данными по аналогии с .env_example:
+### 2. Настройка окружения
+Создайте `.env` файл на основе примера:
+```bash
+cp .env_example .env
+nano .env  # Редактируем параметры
 ```
-# Файл .env
-POSTGRES_USER=django_user
-POSTGRES_PASSWORD=mysecretpassword
-POSTGRES_DB=django
-DB_HOST=db
-DB_PORT=5432
 
-DJANGO_SUPERUSER_USERNAME=admin
-DJANGO_SUPERUSER_PASSWORD=secretpassword
-DJANGO_SUPERUSER_EMAIL=admin@example.com
-SECRET_KEY='секретный ключ Django'
+### 3. Запуск проекта
+```bash
+docker-compose up -d --build
 ```
-Запустить проект
+
+### 4. Инициализация БД
+```bash
+docker-compose exec backend ./init.sh
 ```
-docker-compose up --build
-```
-При первом запуске стоит проинициализировать базу данных
-в отдельной консоли:
+*Скрипт автоматически:*
+- Применяет миграции
+- Загружает ингредиенты
+- Создает суперпользователя (данные берутся из `.env`)
 
-```
-docker-compose exec backend ch ./init.sh
-```
-при этом выполнится скрипт внутри бэкенд контейнера 
-```
-#!/bin/bash
-set -e
+### 5. Доступ к сервису
+- Основное приложение: [http://localhost](http://localhost)  
+- API документация: [http://localhost/api/docs/](http://localhost/api/docs/)  
+- Админ-панель: [http://localhost/admin/](http://localhost/admin/)  
 
-python manage.py migrate
-python manage.py load_ingredients
-python manage.py loaddata db
-python manage.py createsuperuser --noinput
+## 🚀 Процесс деплоя
 
-```
-*данные супер пользователя берутся из соответсвующих полей .env файла*
+Проект использует автоматизированный пайплайн деплоя через GitHub Actions:
 
+1. **При пуше в ветку `main`**:
+   - Собираются Docker-образы для backend и frontend
+   - Образы загружаются в Docker Hub
+   - Происходит автоматический деплой на production-сервер
 
-- После запуска проект будут доступен по адресу: [http://localhost/](http://localhost/)
+2. **На сервере**:
+   - Обновляются образы из Docker Hub
+   - Перезапускаются контейнеры без downtime
+   - Применяются миграции (если есть)
+   - Собирается статика
 
+3. **Требования к серверу**:
+   - Установленные Docker и Docker Compose
+   - Настроенные переменные окружения
+   - Доступ по SSH с GitHub Actions
 
-- Документация будет доступна по адресу: [http://localhost/api/docs/](http://localhost/api/docs/)
+## 🎯 Особенности реализации
 
+### Backend
+- Кастомная djoser-аутентификация  
+- Оптимизированные запросы к БД (prefetch_related, select_related)  
+- Кэширование с Redis  
+- Документация API (Redoc)  
 
-### Автор backend'а:
+### Infrastructure
+- Полностью контейнеризированное решение  
+- Автоматическое развертывание через CI/CD  
+- Готовые скрипты инициализации  
+- Раздельные volumes для данных:
+  - PostgreSQL
+  - Redis
+  - Статические файлы
+  - Медиа-файлы
 
-гоша (c) 2025
-
-p.s у меня так и не получилось подключить страницы о проекте и технологии во фронте они просто не открываются 404
-я буду очень рад если скажете как это сделать ибо просто раскомментировать не получилось
+## 📬 Контакты
+**Автор backend-части**: Гоша  
+**Год разработки**: 2025  
