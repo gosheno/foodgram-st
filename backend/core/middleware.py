@@ -1,9 +1,8 @@
 # core/middleware.py
 from django.http import JsonResponse
 from django.utils.deprecation import MiddlewareMixin
-from rest_framework_simplejwt.exceptions import (
-    AuthenticationFailed,
-    InvalidToken)
+from rest_framework_simplejwt.exceptions import (AuthenticationFailed,
+                                                 InvalidToken)
 
 
 class DisableCSRFForAPI(MiddlewareMixin):

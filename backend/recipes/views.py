@@ -8,16 +8,12 @@ from django_filters.rest_framework import DjangoFilterBackend
 from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import (IsAuthenticated)
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .filters import IngredientFilter, RecipeFilter
-from .serializers import (
-    IngredientSerializer,
-    RecipeCreateUpdateSerializer,
-    RecipeMinifiedSerializer,
-    RecipeSerializer
-)
+from .serializers import (IngredientSerializer, RecipeCreateUpdateSerializer,
+                          RecipeMinifiedSerializer, RecipeSerializer)
 from .utils import generate_shopping_list
 
 
