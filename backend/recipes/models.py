@@ -1,6 +1,10 @@
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
+from django.core.cache import cache
+
 
 User = get_user_model()
 
@@ -161,3 +165,14 @@ class ShoppingCart(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.recipe.name}"
+    
+
+@receiver([post_save, post_delete], sender=Recipe)
+def clear_recipe_cache(sender, instance, **kwargs):
+    cache.delete_pattern('popular_recipes*')
+    cache.delete_pattern(f'recipe_{instance.id}*')
+
+
+@receiver([post_save, post_delete], sender=Ingredient)
+def clear_ingredient_cache(sender, instance, **kwargs):
+    cache.delete_pattern('ingredients*')

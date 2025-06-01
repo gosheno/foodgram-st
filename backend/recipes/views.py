@@ -7,23 +7,33 @@ from django_filters.rest_framework import DjangoFilterBackend
 from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import (IsAuthenticated,
-                                        IsAuthenticatedOrReadOnly)
+from rest_framework.permissions import (
+    IsAuthenticated,
+    IsAuthenticatedOrReadOnly
+)
 from rest_framework.response import Response
+from django.core.cache import cache
 
 from .filters import IngredientFilter, RecipeFilter
-from .serializers import (IngredientSerializer, RecipeCreateUpdateSerializer,
-                          RecipeMinifiedSerializer, RecipeSerializer)
+from .serializers import (
+    IngredientSerializer,
+    RecipeCreateUpdateSerializer,                 
+    RecipeMinifiedSerializer,
+    RecipeSerializer)
 from .utils import generate_shopping_list
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    queryset = Recipe.objects.all()
     pagination_class = CustomPagination
-    permission_classes = [IsAuthorOrReadOnly, IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthorOrReadOnly]
     filter_backends = [DjangoFilterBackend]
     filterset_class = RecipeFilter
-
+    queryset = Recipe.objects.prefetch_related(
+        'recipe_ingredients__ingredient',
+        'favorited_by',
+        'in_shopping_carts'
+    ).select_related('author')
+    
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:
             return RecipeCreateUpdateSerializer
@@ -35,18 +45,21 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def get_serializer_context(self):
         context = super().get_serializer_context()
         user = self.request.user
-        if user.is_authenticated:
-            context['favorited_ids'] = set(
-                Favorite.objects.filter(user=user)
-                .values_list('recipe_id', flat=True)
-            )
-            context['shopping_cart_ids'] = set(
-                ShoppingCart.objects.filter(user=user)
-                .values_list('recipe_id', flat=True)
-            )
-        else:
-            context['favorited_ids'] = set()
-            context['shopping_cart_ids'] = set()
+        if not user.is_authenticated:
+            context.update({
+                'favorited_ids': set(),
+                'shopping_cart_ids': set()
+            })
+            return context
+        
+        # Один запрос для обоих типов данных
+        favorites = set(Favorite.objects.filter(user=user).values_list('recipe_id', flat=True))
+        carts = set(ShoppingCart.objects.filter(user=user).values_list('recipe_id', flat=True))
+        
+        context.update({
+            'favorited_ids': favorites,
+            'shopping_cart_ids': carts
+        })
         return context
 
     @action(detail=True,
@@ -55,9 +68,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def favorite(self, request, pk=None):
         recipe = get_object_or_404(Recipe, pk=pk)
         user = request.user
+        favorite_exists = Favorite.objects.filter(user=user, recipe=recipe).exists()
 
         if request.method == 'POST':
-            if Favorite.objects.filter(user=user, recipe=recipe).exists():
+            if favorite_exists:
                 return Response(
                     {'detail': 'Рецепт уже в избранном.'},
                     status=status.HTTP_400_BAD_REQUEST
@@ -67,24 +81,24 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         if request.method == 'DELETE':
-            favorite = Favorite.objects.filter(user=user, recipe=recipe)
-            if not favorite.exists():
+            if not favorite_exists:
                 return Response(
                     {'detail': 'Рецепта нет в избранном.'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            favorite.delete()
+            Favorite.objects.filter(user=user, recipe=recipe).delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True,
             methods=['post', 'delete'],
-            permission_classes=[IsAuthenticated],)
+            permission_classes=[IsAuthenticated])
     def shopping_cart(self, request, pk=None):
         recipe = get_object_or_404(Recipe, pk=pk)
         user = request.user
+        in_cart = ShoppingCart.objects.filter(user=user, recipe=recipe).exists()
 
         if request.method == 'POST':
-            if ShoppingCart.objects.filter(user=user, recipe=recipe).exists():
+            if in_cart:
                 return Response(
                     {'detail': 'Рецепт уже в списке покупок.'},
                     status=status.HTTP_400_BAD_REQUEST
@@ -94,21 +108,26 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         if request.method == 'DELETE':
-            cart_item = ShoppingCart.objects.filter(user=user, recipe=recipe)
-            if not cart_item.exists():
+            if not in_cart:
                 return Response(
                     {'detail': 'Рецепта нет в списке покупок.'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            cart_item.delete()
+            ShoppingCart.objects.filter(user=user, recipe=recipe).delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False,
             methods=['get'],
-            permission_classes=[IsAuthenticated],)
+            permission_classes=[IsAuthenticated])
     def download_shopping_cart(self, request):
         user = request.user
         shopping_list = generate_shopping_list(user)
+        
+        if not shopping_list.strip():
+            return Response(
+                {'detail': 'Ваш список покупок пуст.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         response = HttpResponse(shopping_list, content_type='text/plain')
         filename = f'shopping_cart_{user.username}.txt'
@@ -132,18 +151,24 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = None
     filter_backends = [DjangoFilterBackend]
     filterset_class = IngredientFilter
-
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        name = self.request.query_params.get('name')
-        if name:
-            return queryset.filter(name__istartswith=name)
-        return queryset
+    
+    def list(self, request, *args, **kwargs):
+        cache_key = f"ingredients_{request.query_params.get('name', '')}"
+        data = cache.get(cache_key)
+        
+        if not data:
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = self.get_serializer(queryset, many=True)
+            data = serializer.data
+            cache.set(cache_key, data, timeout=60*60)  # Кэшируем на 1 час
+        return Response(data)
 
 
 def short_link_redirect(request, short_id):
     try:
         recipe_id = int(short_id, 16)
+        if recipe_id <= 0:
+            raise ValueError
         recipe = get_object_or_404(Recipe, id=recipe_id)
         return HttpResponseRedirect(f'/recipes/{recipe.id}/')
     except (ValueError, Http404):

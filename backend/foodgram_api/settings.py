@@ -15,11 +15,12 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
     "localhost",
     "backend",
+    "proxy"
 ]
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost",
-    "http://127.0.0.1",
 
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:8000",  # (для админки)
 ]
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -31,23 +32,27 @@ INSTALLED_APPS = [
     "django_filters",
     "rest_framework",
     "rest_framework.authtoken",
+    'django_redis',
     "djoser",
     "api",
     "users",
     "recipes",
-    "corsheaders",  # Added for handling CORS
+    "corsheaders",
 ]
 
 MIDDLEWARE = [
+    "core.middleware.ClearInvalidTokenMiddleware",
+    "core.middleware.DisableCSRFForAPI",
+    
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "core.middleware.DisableCSRFForAPI",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    'django.middleware.locale.LocaleMiddleware'
+    'django.middleware.locale.LocaleMiddleware',
+    'django.middleware.gzip.GZipMiddleware',
 ]
 
 ROOT_URLCONF = "foodgram_api.urls"
@@ -77,14 +82,26 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.getenv('POSTGRES_DB', 'django'),
         'USER': os.getenv('POSTGRES_USER', 'django'),
-        # Changed to a more secure defaul
         'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'mysecretpassword'),
-        'HOST': os.getenv('DB_HOST', 'db'),  # Changed 'db' to 'localhost'
+        'HOST': os.getenv('DB_HOST', 'db'),
         'PORT': os.getenv('DB_PORT', 5432)
     }
 }
 
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://redis:6379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
+        "KEY_PREFIX": "foodgram"
+    }
+}
 
+CACHE_TTL = 60 * 15  # 15 минут
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
 """
 DATABASES = {
     "default": {
@@ -122,15 +139,27 @@ LANGUAGES = [
 
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.IsAuthenticatedOrReadOnly",
+        "rest_framework.permissions.AllowAny",
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.TokenAuthentication",
-        "rest_framework.authentication.SessionAuthentication",
+        'rest_framework.authentication.TokenAuthentication',
     ],
     "DEFAULT_FILTER_BACKENDS": [
         "django_filters.rest_framework.DjangoFilterBackend",
     ],
+    "DEFAULT_RENDERER_CLASSES": [
+        "rest_framework.renderers.JSONRenderer",
+    ] + (["rest_framework.renderers.BrowsableAPIRenderer"] if DEBUG else []),
+    "DEFAULT_PAGINATION_CLASS": "api.paginations.CustomPagination",
+    "PAGE_SIZE": 6,
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle"
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "1000/hour",
+        "user": "10000/hour"
+    }
 }
 
 DJOSER = {
@@ -165,8 +194,10 @@ MEDIA_ROOT = BASE_DIR / "mediafiles"
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-# Ensure proper CORS settings for frontend communication
+
 CORS_ALLOWED_ORIGINS = [
-    "http://127.0.0.1:3000",  # Adjust this if your frontend runs on a different port
+    "http://127.0.0.1:3000", 
     "http://localhost:3000",
+    "http://localhost",
+    "http://127.0.0.1",
 ]
