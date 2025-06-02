@@ -44,7 +44,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     ingredients = IngredientInRecipeSerializer(
         many=True,
         source="recipe_ingredients",
-        read_only=True  # Добавляем явное указание, что поле только для чтения
+        read_only=True
     )
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()

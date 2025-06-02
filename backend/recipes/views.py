@@ -158,7 +158,7 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = self.filter_queryset(self.get_queryset())
             serializer = self.get_serializer(queryset, many=True)
             data = serializer.data
-            cache.set(cache_key, data, timeout=60 * 60)  # Кэшируем на 1 час
+            cache.set(cache_key, data, timeout=60 * 60)
         return Response(data)
 
 
