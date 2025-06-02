@@ -101,7 +101,7 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         ingredients_data = validated_data.pop("ingredients")
         validated_data.pop('author', None)
         recipe = Recipe.objects.create(
-            author=self.context["request"].user,  # Автор только здесь
+            author=self.context["request"].user,
             **validated_data
         )
         self._add_ingredients(recipe, ingredients_data)

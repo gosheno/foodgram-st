@@ -46,7 +46,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
             })
             return context
 
-        # Один запрос для обоих типов данных
         favorites = set(Favorite.objects.filter(
             user=user).values_list('recipe_id', flat=True))
         carts = set(ShoppingCart.objects.filter(
