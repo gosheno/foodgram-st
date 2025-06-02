@@ -138,9 +138,10 @@ jobs:
     steps:
       - name: Send notification
         env:
-          STATUS: ${{ 
-            needs.deploy.result == 'failure' && '❌ Ошибка деплоя' || '✅ Успешный деплой'
-          }}
+          STATUS: >-
+            ${{ 
+              contains(needs.*.result, 'failure') && '❌ Ошибка деплоя' || '✅ Успешный деплой'
+            }}
           BRANCH: ${{ github.ref_name }}
           COMMIT: ${{ github.sha }}
         run: |
@@ -148,3 +149,4 @@ jobs:
             -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
             -d text="Foodgram Deploy: $STATUS%0A%0AВетка: $BRANCH%0AКоммит: ${COMMIT:0:7}%0AПодробности: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
             -d parse_mode="Markdown"
+  
