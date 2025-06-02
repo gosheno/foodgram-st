@@ -83,7 +83,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   deploy:
-    needs: [build-backend, build-frontend]
+    needs: [build-backend, build-frontend, tests]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
@@ -111,7 +111,7 @@ jobs:
             docker system prune -af --volumes
           "
 
-  notify:
+  notify-build:
     runs-on: ubuntu-latest
     needs: [tests, build-backend, build-frontend]
     if: always()
@@ -130,7 +130,7 @@ jobs:
             -d text="Foodgram CI/CD: $STATUS%0A%0AВетка: $BRANCH%0AКоммит: ${COMMIT:0:7}%0AПодробности: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
             -d parse_mode="Markdown"
   
-  notify:
+  notify-deploy:
     runs-on: ubuntu-latest
     needs: [tests, build-backend, build-frontend, deploy]
     if: always()
