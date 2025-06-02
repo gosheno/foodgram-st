@@ -170,6 +170,7 @@ class ShoppingCart(models.Model):
 def clear_recipe_cache(sender, instance, **kwargs):
     cache.delete_pattern('popular_recipes*')
     cache.delete_pattern(f'recipe_{instance.id}*')
+    cache.delete_pattern('paginated_*')
 
 
 @receiver([post_save, post_delete], sender=Ingredient)

@@ -1,4 +1,4 @@
-name: CI/CD Pipeline with Tests
+name: CI/CD Pipeline
 
 on:
   push:
@@ -6,39 +6,45 @@ on:
   pull_request:
     branches: [ main ]
 
+env:
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+  SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+  SERVER_IP: ${{ secrets.SERVER_IP }}
+  SERVER_USER: ${{ secrets.SERVER_USER }}
+
 jobs:
   tests:
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.10"
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install flake8 pep8-naming flake8-broken-line flake8-return flake8-isort
-        pip install -r backend/requirements.txt
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 pep8-naming flake8-broken-line flake8-return flake8-isort
+          pip install -r backend/requirements.txt
 
-    - name: Test with flake8
-      run: |
-        python -m flake8 backend --extend-ignore=R504,E203,W503,E122,R503 
+      - name: Run flake8
+        run: |
+          python -m flake8 backend --extend-ignore=R504,E203,W503,E122,R503
 
   build-backend:
     needs: tests
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
+      
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ env.DOCKER_PASSWORD }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -47,8 +53,8 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: ./backend
-          push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/foodgram-backend:latest
+          push: ${{ github.event_name == 'push' }}
+          tags: ${{ env.DOCKER_USERNAME }}/foodgram-backend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -56,14 +62,13 @@ jobs:
     needs: tests
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
+      
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ env.DOCKER_PASSWORD }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -72,10 +77,39 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: ./frontend
-          push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/foodgram-frontend:latest
+          push: ${{ github.event_name == 'push' }}
+          tags: ${{ env.DOCKER_USERNAME }}/foodgram-frontend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy:
+    needs: [build-backend, build-frontend]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install SSH key
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ env.SSH_PRIVATE_KEY }}
+
+      - name: Prepare docker-compose
+        run: |
+          sed -i "s|image: postgres:16.2-alpine|image: $DOCKER_USERNAME/foodgram-postgres:latest|g" docker-compose.prod.yml
+          sed -i "s|build: ../backend|image: $DOCKER_USERNAME/foodgram-backend:latest|g" docker-compose.prod.yml
+          sed -i "s|build: ../frontend|image: $DOCKER_USERNAME/foodgram-frontend:latest|g" docker-compose.prod.yml
+          echo "PROD_COMPOSE=$(cat docker-compose.prod.yml | base64 -w 0)" >> $GITHUB_ENV
+
+      - name: Deploy to server
+        run: |
+          ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP "
+            echo '${{ env.PROD_COMPOSE }}' | base64 --decode > docker-compose.yml
+            docker-compose pull
+            docker-compose down
+            docker-compose up -d
+            docker system prune -af --volumes
+          "
 
   notify:
     runs-on: ubuntu-latest
@@ -84,7 +118,29 @@ jobs:
     steps:
       - name: Send notification
         env:
-          STATUS: ${{ join(needs.*.result, '') == 'successsuccesssuccess' && '✅ Успешно' || '❌ Ошибка' }}
+          STATUS: ${{ 
+            contains(needs.*.result, 'failure') && '❌ Ошибка' || 
+            (github.event_name == 'pull_request' && '✅ Тесты пройдены') 
+          }}
+          BRANCH: ${{ github.ref_name }}
+          COMMIT: ${{ github.sha }}
+        run: |
+          curl -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d text="Foodgram CI/CD: $STATUS%0A%0AВетка: $BRANCH%0AКоммит: ${COMMIT:0:7}%0AПодробности: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            -d parse_mode="Markdown"
+  
+  notify:
+    runs-on: ubuntu-latest
+    needs: [tests, build-backend, build-frontend, deploy]
+    if: always()
+    steps:
+      - name: Send notification
+        env:
+          STATUS: ${{ 
+            contains(needs.*.result, 'failure') && '❌ Ошибка' || 
+            (github.event_name == 'pull_request' && '✅ Успешный деплой') 
+          }}
           BRANCH: ${{ github.ref_name }}
           COMMIT: ${{ github.sha }}
         run: |

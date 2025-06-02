@@ -106,5 +106,12 @@ docker-compose exec backend ./init.sh
   - Медиа-файлы
 
 ## 📬 Контакты
+
 **Автор backend-части**: Гоша  
 **Год разработки**: 2025  
+
+📂 **Исходный код**: [GitHub Repository](https://github.com/gosheno/foodgram-st)  
+📨 **Telegram**: [@goshenou](https://t.me/goshenou)
+
+[![Telegram](https://img.shields.io/badge/-Telegram-26A5E4?style=flat&logo=telegram&logoColor=white)](https://t.me/goshenou)
+[![GitHub](https://img.shields.io/badge/-GitHub-181717?style=flat&logo=github)](https://github.com/gosheno)
