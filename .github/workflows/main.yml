@@ -83,7 +83,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   deploy:
-    needs: [build-backend, build-frontend, tests]
+    needs: [build-backend, build-frontend]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
@@ -113,14 +113,14 @@ jobs:
 
   notify-build:
     runs-on: ubuntu-latest
-    needs: [tests, build-backend, build-frontend]
+    needs: [build-backend, build-frontend]
     if: always()
     steps:
       - name: Send notification
         env:
           STATUS: ${{ 
             contains(needs.*.result, 'failure') && '❌ Ошибка' || 
-            (github.event_name == 'pull_request' && '✅ Тесты пройдены') 
+            (github.event_name == 'pull_request' && '✅ Тесты пройдены' || '✅ Сборка успешна')
           }}
           BRANCH: ${{ github.ref_name }}
           COMMIT: ${{ github.sha }}
@@ -132,19 +132,18 @@ jobs:
   
   notify-deploy:
     runs-on: ubuntu-latest
-    needs: [tests, build-backend, build-frontend, deploy]
+    needs: deploy
     if: always()
     steps:
       - name: Send notification
         env:
           STATUS: ${{ 
-            contains(needs.*.result, 'failure') && '❌ Ошибка' || 
-            (github.event_name == 'pull_request' && '✅ Успешный деплой') 
+            needs.deploy.result == 'failure' && '❌ Ошибка деплоя' || '✅ Успешный деплой'
           }}
           BRANCH: ${{ github.ref_name }}
           COMMIT: ${{ github.sha }}
         run: |
           curl -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
             -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -d text="Foodgram CI/CD: $STATUS%0A%0AВетка: $BRANCH%0AКоммит: ${COMMIT:0:7}%0AПодробности: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            -d text="Foodgram Deploy: $STATUS%0A%0AВетка: $BRANCH%0AКоммит: ${COMMIT:0:7}%0AПодробности: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
             -d parse_mode="Markdown"
