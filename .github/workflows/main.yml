@@ -118,10 +118,11 @@ jobs:
     steps:
       - name: Send notification
         env:
-          STATUS: ${{ 
-            contains(needs.*.result, 'failure') && '❌ Ошибка' || 
-            (github.event_name == 'pull_request' && '✅ Тесты пройдены' || '✅ Сборка успешна')
-          }}
+          STATUS: >-
+            ${{ 
+              contains(needs.*.result, 'failure') && '❌ Ошибка' || 
+              (github.event_name == 'pull_request' && '✅ Тесты пройдены' || '✅ Сборка успешна')
+            }}
           BRANCH: ${{ github.ref_name }}
           COMMIT: ${{ github.sha }}
         run: |
